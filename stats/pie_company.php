@@ -1,0 +1,49 @@
+<?php
+################################################################################
+# @Name : pie_companys.php
+# @Desc : Display Statistics of chart 8 
+# @call : /stat.php
+# @parameters : 
+# @Author : Flox
+# @Create : 08/03/2014
+# @Update : 24/09/2014
+# @Version : 3.0.10
+################################################################################
+
+//array declaration
+$values = array();
+$xnom = array();
+
+//display title
+$libchart="Répartition du nombre de tickets par Sociétés";
+$unit='tickets';
+
+//query
+$query1 = "
+SELECT tcompany.name as company, COUNT(*) as nb
+FROM tincidents, tcompany, tusers
+WHERE 
+tcompany.id=tusers.company AND
+tusers.id=tincidents.user AND
+tincidents.disable='0' AND
+tincidents.type LIKE '$_POST[type]' AND
+tincidents.category LIKE '$_POST[category]' AND
+tincidents.date_create LIKE '%-$_POST[month]-%' AND
+tincidents.date_create LIKE '$_POST[year]-%' AND
+tincidents.technician LIKE '$_POST[tech]'
+GROUP BY tcompany.name 
+ORDER BY nb
+DESC ";
+$query = mysql_query($query1);
+while ($row=mysql_fetch_array($query)) 
+{
+	$name=substr($row[0],0,35);
+	$name=str_replace("'","\'",$name); 
+	array_push($values, $row[1]);
+	array_push($xnom, $name);
+} 
+$container='container8';
+include('./stat_pie.php');
+echo "<div id=\"$container\"></div>";
+if ($rparameters['debug']==1)echo $query1;
+?>
