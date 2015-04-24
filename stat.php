@@ -28,6 +28,9 @@ if(!isset($_POST['subcat'])) $_POST['subcat']= '';
 if(!isset($_POST['year'])) $_POST['year'] = '';
 if(!isset($_POST['month'])) $_POST['month'] = '';
 if(!isset($_POST['category'])) $_POST['category'] = '';
+if(!isset($_POST['date_begin'])) $_POST['date_begin']='';
+if(!isset($_POST['date_end'])) $_POST['date_end']='';
+if(!isset($_POST['client'])) $_POST['client']='';
 
 //default values 
 if ($_POST['tech']=="") $_POST['tech']="%";
@@ -44,20 +47,43 @@ $jour= array();
 $jour = array(1 => "1", 2=> "2", 3=> "3", 4=> "4", 5=> "5", 6=> "6", 7=> "7", 8=> "8", 9=> "9", 10=> "10", 11=> "11", 12=> "12", 13=> "13", 14=> "14", 15=> "15", 16=> "16", 17=> "17", 18=> "18", 19=> "19", 20=> "20", 21=> "21", 22=> "22", 23=> "23", 24=> "24", 25=> "25", 26=> "26", 27=> "27", 28=> "28", 29=> "29", 30=> "30", 31=> "31");
 ?>
 
+
+
+
 <div class="page-header position-relative">
 	<h1>
 		<i class="icon-bar-chart"></i>  Statistiques 
-		<div class="pull-right">
-			<a  target="about_blank" href="./core/export.php">
-		        <button  class="btn btn-xs btn-purple">
-		            <i align="right" class="icon-list "></i>
-		            Export Excel
-		        </button>
-			 </a>
-		</div>
 	</h1>
 </div>
 
+<form name="export" method="POST" 	action="./core/export.php">
+	<table>
+		<tr>
+			<td>Date début</td>
+			<td>Date fin</td>
+			<td>Client</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td><input type="date" name="date_begin" id="date_begin" value="<?php if ($_POST['date_begin']) echo $_POST['date_begin']; ?>">
+			<td><input type="date" name="date_end" id="date_end" value="<?php if ($_POST['date_end']) echo $_POST['date_end']; ?>">
+			<td><select id="client" name="client">
+					<option value="%" selected></option>
+			<?php
+				$query = mysql_query("SELECT * FROM `tusers` WHERE disable='0' AND profile='2' ORDER BY login");
+				while ($row=mysql_fetch_array($query)) {echo "<option value=\"$row[id]\">$row[lastname] $row[firstname]</option>";}
+			?>
+			</select></td>
+			<td>
+				<button  class="btn btn-xs btn-purple" type="submit">
+					<i align="right" class="icon-list "></i>
+					Export Excel
+				</button>
+			</td>
+		</tr>
+	</table>
+</form>
+</br></br></br>
 <div class="page-header position-relative">
 	
 		<form method="post" action="" name="filter" >

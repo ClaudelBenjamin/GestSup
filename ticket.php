@@ -12,7 +12,8 @@
 if(!isset($userreg)) $userreg = ''; 
 if(!isset($category)) $category = ''; 
 if(!isset($subcat)) $subcat = ''; 
-if(!isset($title)) $title = ''; 
+if(!isset($title)) $title = '';
+if(!isset($ref)) $ref = ''; 
 if(!isset($date_hope)) $date_hope = ''; 
 if(!isset($date_create)) $date_create = ''; 
 if(!isset($state)) $state = ''; 
@@ -36,6 +37,7 @@ if(!isset($userid)) $userid = '';
 if(!isset($_POST['mail'])) $_POST['mail'] = '';
 if(!isset($_POST['upload'])) $_POST['upload'] = '';
 if(!isset($_POST['title'])) $_POST['title'] = '';
+if(!isset($_POST['ref'])) $_POST['ref'] = '';
 if(!isset($_POST['description'])) $_POST['description'] = '';
 if(!isset($_POST['resolution'])) $_POST['resolution'] = '';
 if(!isset($_POST['Submit'])) $_POST['Submit'] = '';
@@ -75,6 +77,7 @@ if(!isset($globalrow['t_group'])) $globalrow['t_group'] = '';
 if(!isset($globalrow['category'])) $globalrow['category'] = '';
 if(!isset($globalrow['subcat'])) $globalrow['subcat'] = '';
 if(!isset($globalrow['title'])) $globalrow['title'] = '';
+if(!isset($globalrow['ref'])) $globalrow['ref'] = '';
 if(!isset($globalrow['description'])) $globalrow['description'] = '';
 if(!isset($globalrow['date_create'])) $globalrow['date_create'] = $datetime;
 if(!isset($globalrow['date_hope'])) $globalrow['date_hope'] = '';
@@ -169,7 +172,7 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 								<select id="user" name="user" onchange="loadVal(); submit();" <?php if(($rright['ticket_user']==0 && $_GET['action']!='new') || ($rright['ticket_new_user']==0 && $_GET['action']=='new')) echo 'onfocus="this.blur()"';?> >
 									<?php
 									//diplay user list
-									$query = mysql_query("SELECT * FROM `tusers` WHERE disable='0' ORDER BY lastname ASC, firstname ASC");
+									$query = mysql_query("SELECT * FROM `tusers` WHERE disable='0' ORDER BY profile, login");
 									while ($row=mysql_fetch_array($query)) {echo "<option value=\"$row[id]\">$row[lastname] $row[firstname]</option>";}
 									//group
 									$query = mysql_query("SELECT * FROM `tgroups` WHERE disable='0' and type='0' ORDER BY name");
@@ -271,42 +274,6 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 							</div>
 						</div>
 						<!-- END sender part -->
-				        <!-- START type part -->
-				        <?php
-				            if($rparameters['ticket_type']=='1')
-				            {
-				                echo'
-				                <div class="form-group '; if(($rright['ticket_type_disp']==0 && $_GET['action']!='new') || ($rright['ticket_new_type_disp']==0 && $_GET['action']=='new')) {echo 'hide';} echo'">
-        							<label class="col-sm-2 control-label no-padding-right" for="date_hope">
-        							    ';if (($_POST['type']==0) && ($globalrow['type']==0)) {echo '<i title="Selectionner un type" class="icon-warning-sign red bigger-130"></i>&nbsp;';} echo'
-        							    Type:
-        							</label>
-        							<div class="col-sm-8">
-        							    <select  id="type" name="type"'; if(($rright['ticket_type']==0 && $_GET['action']!='new') || ($rright['ticket_new_type']==0 && $_GET['action']=='new')) {echo 'onfocus="this.blur();"';} echo'>';
-        									if ($_POST['type'])
-        									{
-        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id='$_POST[type]'");
-        										$row=mysql_fetch_array($query);
-        										echo "<option value=\"$_POST[type]\" selected >$row[name]</option>";
-        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id!='$_POST[type]'");
-        							    		while ($row=mysql_fetch_array($query)) echo "<option value=\"$row[id]\">$row[name]</option>";
-        									}
-        									else
-        									{
-        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id='$globalrow[type]' ORDER BY id");
-        										$row=mysql_fetch_array($query);
-        										echo "<option value=\"$globalrow[type]\" selected >$row[name]</option>";
-        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id!='$globalrow[type]'");
-        								    	while ($row=mysql_fetch_array($query)) echo "<option value=\"$row[id]\">$row[name]</option>";
-        									}
-        									echo'			
-        								</select>
-        							</div>
-    					    	</div>
-    					    	';
-				            }
-				        ?>
-					    <!-- END type part -->	
 						<!-- START tech part -->
 						<div class="form-group <?php if(($rright['ticket_tech_disp']==0 && $_GET['action']!='new') || ($rright['ticket_new_tech_disp']==0 && $_GET['action']=='new')) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="technician">
@@ -358,12 +325,22 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 						<div class="form-group <?php if(($rright['ticket_cat_disp']==0 && $_GET['action']!='new') || ($rright['ticket_new_cat_disp']==0 && $_GET['action']=='new')) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="category">
 								<?php if(($globalrow['category']==0 || $globalrow['subcat']==0) && ($_POST['category']==0 || $_POST['subcat']==0)) echo '<i title="Aucune catégorie associé." class="icon-warning-sign red bigger-130"></i>&nbsp;'; ?>
-								Catégorie:
+								Client / Logiciel:
 							</label>
 							<div class="col-sm-8">
 								<select id="category" name="category" onchange="loadVal(); submit();" <?php if(($rright['ticket_cat']==0 && $_GET['action']!='new') || ($rright['ticket_new_cat']==0 && $_GET['action']=='new')) echo 'onfocus="this.blur();"';?>>
 								<?php
-									$query= mysql_query("SELECT * FROM `tcategory` order by name ");
+									$requete = "";
+									// Afficher les categories en fonction des vues de l'utilisateur
+									$query1= mysql_query("SELECT tcategory.* FROM tcategory, tusers, tviews WHERE tcategory.id = tviews.category and tusers.id = tviews.uid AND tusers.id LIKE '$_GET[userid]'");
+									$nbRow=mysql_num_rows($query1);
+									
+									if($nbRow==0){
+										$requete = "SELECT tcategory.* FROM tcategory order by name ASC ";
+									}else{
+										$requete = "SELECT tcategory.* FROM tcategory, tusers, tviews WHERE tcategory.id = tviews.category and tusers.id = tviews.uid AND tusers.id LIKE '$_GET[userid]'";
+									}
+									$query= mysql_query($requete);
 									while ($row=mysql_fetch_array($query)) 
 									{
 										if ($_POST['category'])
@@ -411,6 +388,42 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 							</div>
 						</div>
 						<!-- END cat part -->
+						<!-- START type part -->
+				        <?php
+				            if($rparameters['ticket_type']=='1')
+				            {
+				                echo'
+				                <div class="form-group '; if(($rright['ticket_type_disp']==0 && $_GET['action']!='new') || ($rright['ticket_new_type_disp']==0 && $_GET['action']=='new')) {echo 'hide';} echo'">
+        							<label class="col-sm-2 control-label no-padding-right" for="date_hope">
+        							    ';if (($_POST['type']==0) && ($globalrow['type']==0)) {echo '<i title="Selectionner un type" class="icon-warning-sign red bigger-130"></i>&nbsp;';} echo'
+        							    Type:
+        							</label>
+        							<div class="col-sm-8">
+        							    <select  id="type" name="type"'; if(($rright['ticket_type']==0 && $_GET['action']!='new') || ($rright['ticket_new_type']==0 && $_GET['action']=='new')) {echo 'onfocus="this.blur();"';} echo'>';
+        									if ($_POST['type'])
+        									{
+        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id='$_POST[type]'");
+        										$row=mysql_fetch_array($query);
+        										echo "<option value=\"$_POST[type]\" selected >$row[name]</option>";
+        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id!='$_POST[type]'");
+        							    		while ($row=mysql_fetch_array($query)) echo "<option value=\"$row[id]\">$row[name]</option>";
+        									}
+        									else
+        									{
+        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id='$globalrow[type]' ORDER BY id");
+        										$row=mysql_fetch_array($query);
+        										echo "<option value=\"$globalrow[type]\" selected >$row[name]</option>";
+        										$query = mysql_query("SELECT * FROM `ttypes` WHERE id!='$globalrow[type]'");
+        								    	while ($row=mysql_fetch_array($query)) echo "<option value=\"$row[id]\">$row[name]</option>";
+        									}
+        									echo'			
+        								</select>
+        							</div>
+    					    	</div>
+    					    	';
+				            }
+				        ?>
+					    <!-- END type part -->	
 						<!-- START place part if parameter is on -->
 						<?php
 						if($rparameters['ticket_places']==1)
@@ -443,9 +456,22 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 						}
 						?>
 						<!-- END place part -->
+						<!-- START ref part -->
+						<div class="form-group <?php if($rright['ticket_ref_disp']==0) echo 'hide';?>">
+							<label class="col-sm-2 control-label no-padding-right">
+								Référence:
+							</label>
+							<div class="col-sm-8">
+								<input  name="ref" id="ref" type="text" size="20"  value="<?php if ($_POST['ref']) echo $_POST['ref']; else echo $globalrow['ref']; ?>" <?php if($rright['ticket_ref']==0  && $_GET['action']!='new') echo 'readonly="readonly"';?> />
+							</div>
+						</div>
+						<!-- END ref part -->
 						<!-- START title part -->
 						<div class="form-group <?php if($rright['ticket_title_disp']==0) echo 'hide';?>">
-							<label class="col-sm-2 control-label no-padding-right" for="title">Titre:</label>
+							<label class="col-sm-2 control-label no-padding-right" for="title">
+								<?php if($globalrow['title']=='' && $_POST['title']=='' ) echo '<i title="Saisissez un titre." class="icon-warning-sign red bigger-130"></i>&nbsp;'; ?>
+								Titre:
+							</label>
 							<div class="col-sm-8">
 								<input  name="title" id="title" type="text" size="50"  value="<?php if ($_POST['title']) echo $_POST['title']; else echo $globalrow['title']; ?>" <?php if($rright['ticket_title']==0  && $_GET['action']!='new') echo 'readonly="readonly"';?> />
 							</div>
@@ -467,14 +493,14 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 												//display editor
 												echo '
 												<div id="editor" class="wysiwyg-editor" >';
-											    	if ($_POST['text'] && $_POST['text']!='<br><br><br>') echo "$_POST[text]"; else echo $desc;
-										            if ($_GET['action']=='new' && !$_POST['user']) echo '<br /><br /><br />'; echo'
+											    	if ($_POST['text'] && $_POST['text']!='') echo "$_POST[text]"; else echo $desc;
+										            if ($_GET['action']=='new' && !$_POST['user']) echo ''; echo'
 												</div>
 												<input type="hidden" id="text" name="text" />
 												';
 											} else {
 												echo $globalrow['description'];
-												echo '<input type="hidden" name="text" value="'.$globalrow['description'].'" />';
+												echo '<input type="hidden" name="text" value='.$globalrow['description'].' />';
 											}
 											?>
 										</td>
@@ -521,12 +547,22 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 								<input type="text" name="date_create" id="date_create" value="<?php if ($_POST['date_create']) echo $_POST['date_create']; else echo $globalrow['date_create']; ?>" <?php if($rright['ticket_date_create']==0) echo 'readonly="readonly"';?> >
 							</div> 
 						</div>
+						<?php 
+						if($rright['ticket_date_create_disp']==0) {
+							echo'<div class="form-group">
+							<label class="col-sm-2 control-label no-padding-right" for="date_create">Date de la demande: </label>
+							<div class="col-sm-8">
+							<label style="padding-top: 4px">';
+							if ($_POST['date_create']) echo $_POST['date_create']; else echo $globalrow['date_create'];
+							echo '</label></div></div>';
+						}
+						?>
 						<!-- END create date part -->
 						<!-- START hope date part -->
 						<div class="form-group <?php if($rright['ticket_date_hope_disp']==0) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="date_hope">Date de résolution estimée:</label>
 							<div class="col-sm-8">
-								<input  type="text" id="date_hope" name="date_hope"  value="<?php  if ($_POST['date_hope']) echo $_POST['date_hope']; else echo $globalrow['date_hope']; ?>" <?php if($rright['ticket_date_hope']==0) echo 'readonly="readonly"';?>>
+								<input  type="text" id="date_hope" name="date_hope"  value="<?php  if ($_POST['date_hope']) echo $_POST['date_hope']; else echo $globalrow['date_hope']; ?>" <?php if($rright['ticket_date_hope']==0) echo 'onhover="this.blur()"';?>>
 								<?php
 									//display warning if hope date is passed
 									$date_hope=$globalrow['date_hope'];
@@ -536,30 +572,108 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 								?>
 							</div>
 						</div>
+						<?php 
+						if($rright['ticket_date_hope_disp']==0) {
+							echo'<div class="form-group">
+							<label class="col-sm-2 control-label no-padding-right" for="date_hope">Date de résolution estimée: </label>
+							<div class="col-sm-8">
+							<label style="padding-top: 4px">';
+							if ($_POST['date_hope']) echo $_POST['date_hope']; else echo $globalrow['date_hope'];
+							echo '</label> </div></div>';
+						}
+						?>
 						<!-- END hope date part -->
 						<!-- START resolution date part -->
 						<div class="form-group <?php if($rright['ticket_date_res_disp']==0) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="">Date de résolution:</label>
 							<div class="col-sm-8">
-								<input  type="text" id="date_res" name="date_res"  value="<?php  if ($_POST['date_res']) echo $_POST['date_res']; else echo $globalrow['date_res']; ?>" <?php if($rright['ticket_date_res']==0) echo 'readonly="readonly"';?>>
+								<input  type="text" id="date_res" name="date_res"  value="<?php  if ($_POST['date_res']) echo $_POST['date_res']; else echo $globalrow['date_res']; ?>" <?php if($rright['ticket_date_res']==0) echo 'onhover="this.blur()"';?>>
 							</div>
 						</div>
+						<?php 
+						if($rright['ticket_date_res_disp']==0) {
+							echo'<div class="form-group">
+							<label class="col-sm-2 control-label no-padding-right">Date de résolution:</label>
+							<div class="col-sm-8">
+							<label style="padding-top: 4px">';
+							if ($_POST['date_res']) echo $_POST['date_res']; else echo $globalrow['date_res'];
+							echo '</label></div></div>';
+						}
+						?>
 						<!-- END resolution date part -->
 						<!-- START time part -->
+						<?php 
+							// Décomposition du global row en 3 valeur (j, h, min)
+							$globalrow['time_day']=floor($globalrow['time']/60/7);
+							$globalrow['time_hour']=floor(($globalrow['time']-($globalrow['time_day']*60*7))/60); 
+							$globalrow['time_min']=($globalrow['time']-($globalrow['time_day']*60*7))%60;
+						?>
 						<div class="form-group <?php if($rright['ticket_time_disp']==0) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="time">Temps passé:</label>
 							<div class="col-sm-8">
-								<select  id="time" name="time" <?php if($rright['ticket_time']==0) echo 'onfocus="this.blur();"';?> >
-								<?php
-									$query = mysql_query("SELECT * FROM `ttime` order by min ASC");
-									while ($row=mysql_fetch_array($query)) 
-									{
-										if (($_POST['time']==$row['min'])||($globalrow['time']==$row['min'])) echo '<option selected value="'.$row['min'].'">'.$row['name'].'</option>'; else echo '<option value="'.$row['min'].'">'.$row['name'].'</option>';
-									}
+								<?php 
+									// Décomposition du global row en 3 valeur (j, h, min)
+									$globalrow['time_day']=floor($globalrow['time']/60/7);
+									$globalrow['time_hour']=floor(($globalrow['time']-($globalrow['time_day']*60*7))/60); 
+									$globalrow['time_min']=($globalrow['time']-($globalrow['time_day']*60*7))%60;
 								?>
+								<select  id="time_day" name="time_day" <?php if($rright['ticket_time']==0) echo 'onhover="this.blur()"';?> >
+									<?php 
+										for($i=0; $i<31; $i++){
+											$val = $i*7*60;
+											if (($_POST['time_day']==$val)||($globalrow['time_day']==$i)){ 
+												echo '<option selected value="'.$val.'">'.$i.'</option>';  
+											}else{ 
+												echo '<option value="'.$val.'">'.$i.'</option>';
+											}
+										}
+									?>
 								</select>
+								jours
+								<select  id="time_hour" name="time_hour" <?php if($rright['ticket_time']==0) echo 'onhover="this.blur()"';?> >
+									<?php 
+										for($i=0;$i<7;$i++){
+											$val = $i*60;
+											if (($_POST['time_hour']==$val)||($globalrow['time_hour']==$i)){ 
+												echo '<option selected value="'.$val.'">'.$i.'</option>';  
+											}else{
+												echo '<option value="'.$val.'">'.$i.'</option>';
+											}
+										}	
+									?>
+								</select>
+								heures
+								<select  id="time_min" name="time_min" <?php if($rright['ticket_time']==0) echo 'onhover="this.blur()"';?> >
+									<?php 
+										for($i=0; $i<56; $i++){
+											if($i%5==0){ 
+												if (($_POST['time_min']==$i)||($globalrow['time_min']==$i)){ 
+													echo '<option selected value="'.$i.'">'.$i.'</option>';  
+												}else{ 
+													echo '<option value="'.$i.'">'.$i.'</option>';
+												}
+											}
+										}	
+									?>
+								</select>
+								minutes
 							</div>
 						</div>
+						<?php 
+						if($rright['ticket_time_disp']==0) {
+							echo'<div class="form-group">
+							<label class="col-sm-2 control-label no-padding-right">Temps passé: </label>
+							<div class="col-sm-8">
+							<label style="padding-top: 4px">';
+							if ($_POST['time_day']) echo $_POST['time_day']; else echo $globalrow['time_day'];
+							echo ' jours ';
+							if ($_POST['time_hour']) echo $_POST['time_hour']; else echo $globalrow['time_hour'];
+							echo ' heurs ';
+							if ($_POST['time_min']) echo $_POST['time_min']; else echo $globalrow['time_min'];
+							echo ' minutes ';
+							echo '</label> </div></div>';
+						}
+						?>
 						<!-- END time part -->
 						<!-- START time hope part -->
 						<div class="form-group <?php if($rright['ticket_time_hope_disp']==0) echo 'hide';?>">
@@ -567,24 +681,77 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 							<?php if (($globalrow['time_hope']<$globalrow['time']) && $globalrow['state']!='3') echo "<i class=\"icon-warning-sign red bigger-130\" title=\"Le temps est sous-estimé.\"></i>";//display error if time hope < time pass?>
 							Temps estimé:
 							</label>
-							<div class="col-sm-8">
-								<select  id="time_hope" name="time_hope" <?php if($rright['ticket_time_hope']==0) echo 'onfocus="this.blur();"';?> >
-									<?php
-									$query = mysql_query("SELECT * FROM `ttime` order by min ASC");
-									while ($row=mysql_fetch_array($query)) 
-									{
-										if (($_POST['time_hope']==$row['min'])||($globalrow['time_hope']==$row['min'])) echo '<option selected value="'.$row['min'].'">'.$row['name'].'</option>';  else echo '<option value="'.$row['min'].'">'.$row['name'].'</option>';
-									}
+							<div class="col-sm-8" <?php if($rright['ticket_time_hope']==0) echo 'disabled="disabled""';?>>
+								<?php 
+									// Décomposition du global row en 3 valeur (j, h, min)
+									$day = $globalrow['time_hope']/60/7;
+									$globalrow['time_hope_day']=floor($globalrow['time_hope']/60/7);//round($day,0,PHP_ROUND_HALF_DOWN);
+									$globalrow['time_hope_hour']=floor(($globalrow['time_hope']-($globalrow['time_hope_day']*60*7))/60); 
+									$globalrow['time_hope_min']=($globalrow['time_hope']-($globalrow['time_hope_day']*60*7))%60;
+								?>
+								<select  id="time_hope_day" name="time_hope_day" <?php if($rright['ticket_time_hope']==0) echo 'readonly=true';?> >
+									<?php 
+										for($i=0; $i<31; $i++){
+											$val = $i*7*60;
+											if (($_POST['time_hope_day']==$val)||($globalrow['time_hope_day']==$i)){ 
+												echo '<option selected value="'.$val.'">'.$i.'</option>';  
+											}else{ 
+												echo '<option value="'.$val.'">'.$i.'</option>';
+											}
+										}
 									?>
 								</select>
+								jours
+								<select  id="time_hope_hour" name="time_hope_hour" <?php if($rright['ticket_time_hope']==0) echo 'readonly=true';?> >
+									<?php 
+										for($i=0;$i<7;$i++){
+											$val = $i*60;
+											if (($_POST['time_hope_hour']==$val)||($globalrow['time_hope_hour']==$i)){ 
+												echo '<option selected value="'.$val.'">'.$i.'</option>';  
+											}else{
+												echo '<option value="'.$val.'">'.$i.'</option>';
+											}
+										}	
+									?>
+								</select>
+								heures
+								<select  id="time_hope_min" name="time_hope_min" <?php if($rright['ticket_time_hope']==0) echo 'readonly=true';?> >
+									<?php 
+										for($i=0; $i<56; $i++){
+											if($i%5==0){ 
+												if (($_POST['time_hope_min']==$i)||($globalrow['time_hope_min']==$i)){ 
+													echo '<option selected value="'.$i.'">'.$i.'</option>';  
+												}else{ 
+													echo '<option value="'.$i.'">'.$i.'</option>';
+												}
+											}
+										}	
+									?>
+								</select>
+								minutes
 							</div>
 						</div>
+						<?php 
+						if($rright['ticket_time_hope_disp']==0) {
+							echo'<div class="form-group">
+							<label class="col-sm-2 control-label no-padding-right">Temps estimé: </label>
+							<div class="col-sm-8">
+							<label style="padding-top: 4px">';
+							if ($_POST['time_hope_day']) echo $_POST['time_hope_day']; else echo $globalrow['time_hope_day'];
+							echo ' jours ';
+							if ($_POST['time_hope_hour']) echo $_POST['time_hope_hour']; else echo $globalrow['time_hope_hour'];
+							echo ' heurs ';
+							if ($_POST['time_hope_min']) echo $_POST['time_hope_min']; else echo $globalrow['time_hope_min'];
+							echo ' minutes ';
+							echo '</label></div></div>';
+						}
+						?>
 						<!-- START time hope part -->
 						<!-- START priority part -->
 						<div class="form-group <?php if($rright['ticket_priority_disp']==0) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="priority">Priorité:</label>
 							<div class="col-sm-8">
-								<select  id="priority" name="priority"  <?php if($rright['ticket_priority']==0) echo 'onfocus="this.blur();"';?>>
+								<select  id="priority" name="priority"  <?php if($rright['ticket_priority']==0) echo 'onhover="this.blur()"';?>>
 									<?php
 									if ($_POST['priority']!='')
 									{
@@ -615,7 +782,7 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 						<div class="form-group <?php if($rright['ticket_criticality_disp']==0) echo 'hide';?>">
 							<label  class="col-sm-2 control-label no-padding-right" for="criticality" >Criticité:</label>
 							<div class="col-sm-8">
-								<select  id="criticality" name="criticality" onchange="loadVal(); submit();" <?php if($rright['ticket_criticality']==0) echo 'onfocus="this.blur();"';?>>
+								<select  id="criticality" name="criticality" onchange="loadVal(); submit();" <?php if($rright['ticket_criticality']==0) echo 'onhover="this.blur()"';?>>
 									<?php
 									if ($_POST['criticality'])
 									{
@@ -646,7 +813,7 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 						<div class="form-group <?php if($rright['ticket_state_disp']==0) echo 'hide';?>">
 							<label class="col-sm-2 control-label no-padding-right" for="state">État:</label>
 							<div class="col-sm-8">
-								<select  id="state"  name="state" <?php if($rright['ticket_state']==0) echo 'onfocus="this.blur();"';?>>
+								<select  id="state"  name="state" <?php if($rright['ticket_state']==0) echo 'onhover="this.blur()"';?>>
 									<?php
 									//selected value
 									if ($_POST['state'])
@@ -809,7 +976,7 @@ if($_SESSION['profile_id']==4 || $_SESSION['profile_id']==0)
 								echo '
 								<button name="cancel" id="cancel" value="cancel" type="submit" class="btn btn-sm btn-danger">
 									<i class="icon-remove icon-on-right bigger-110"></i> 
-									&nbsp;Annuler
+									&nbsp;Retour
 								</button>
 								';
 							}

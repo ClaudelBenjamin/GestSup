@@ -250,11 +250,17 @@ if($_POST['selectrow'])
 				function redirect()
 				{
 				window.location='./index.php?page=dashboard&state=$_GET[state]&userid=$_GET[userid]'
-				}
+				}				
 				setTimeout('redirect()',$rparameters[time_display_msg]);
 				-->
 		</SCRIPT>";
 }
+	echo "<SCRIPT LANGUAGE='JavaScript'>
+				function confirmation()
+				{
+				if(confirm('Etes vous sur de vouloir effectuer cette action ?')){actionlist.submit();}
+				}
+		</SCRIPT>";
 ?>
 
 <div class="page-header position-relative">
@@ -295,7 +301,20 @@ if($_POST['selectrow'])
 			&nbsp;Nombre: <?php echo $resultcount[0]; ?></i>
 		</small>
 	</h1>
-</div>
+	<br>
+	<?php 
+	if($rright['ticket_import']!=0){
+		echo '<form method="post" enctype="multipart/form-data" action="./core/import.php">
+		<table><tr>
+			<td>Importer fichier *.xls :</td>
+			<td><input type="file" name="file" value="file"></td>
+			<td><input type="submit" value="Importer" name="importer"></td>
+		</tr></table>
+		</form>';
+	}
+	?>
+	
+</div>	
 <?php
 	//display message if search result is null
 	if($resultcount[0]==0 && $keywords!="") echo '<div class="alert alert-danger"><i class="icon-remove"></i> Aucun ticket trouvé pour la recherche: <strong>'.$keywords.'</strong></div>';
@@ -388,7 +407,7 @@ if($_POST['selectrow'])
 							<center>
 								<a title="Catégorie"  href="<?php echo $url; ?>&amp;order=category&amp;way=<?php echo $arrow_way; ?>">
 									<i class="icon-sign-blank"></i><br />
-									Catégorie
+									Client
 									<?php
 									//Display arrows
 									if ($_GET['order']=='category'){
@@ -403,7 +422,7 @@ if($_POST['selectrow'])
 							<center>
 								<a title="Sous-Catégorie"  href="<?php echo $url; ?>&amp;order=subcat&amp;way=<?php echo $arrow_way; ?>">
 									<i class="icon-sitemap"></i>
-									Sous Catégorie
+									Logiciel
 									<?php
 									//Display arrows
 									if ($_GET['order']=='subcat'){
@@ -533,8 +552,8 @@ if($_POST['selectrow'])
 											$query = mysql_query("SELECT * FROM tusers WHERE disable='0' ORDER BY lastname");
 											while ($row=mysql_fetch_array($query)) 
 											{
-												$cutfname=substr($row['firstname'], 0, 1);
-												if ($_POST['user']==$row['id']) echo "<option selected value=\"$row[id]\">$cutfname. $row[lastname]</option>"; else echo "<option value=\"$row[id]\">$row[lastname] $cutfname. </option>";
+												$cutfname=$row['firstname'];
+												if ($_POST['user']==$row['id']) echo "<option selected value=\"$row[id]\">$cutfname  $row[lastname]</option>"; else echo "<option value=\"$row[id]\">$row[lastname]  $cutfname</option>";
 											} 
 											//user group list
 											$query = mysql_query("SELECT * FROM tgroups WHERE disable='0' AND type='0' ORDER BY name");
@@ -551,7 +570,16 @@ if($_POST['selectrow'])
 								<select style="width:65px" name="category" onchange="submit()" >
 									<option value="%"></option>
 									<?php
-									$query = mysql_query("SELECT * FROM tcategory ORDER BY name");
+									$requete = "";
+									// Afficher les categories en fonction des vues de l'utilisateur
+									$query1= mysql_query("SELECT tcategory.* FROM tcategory, tusers, tviews WHERE tcategory.id = tviews.category and tusers.id = tviews.uid AND tusers.id LIKE '$_GET[userid]'");
+									$nbRow=mysql_num_rows($query1);
+									if($nbRow==0){
+										$requete = "SELECT tcategory.* FROM tcategory order by name ASC ";
+									}else{
+										$requete = "SELECT tcategory.* FROM tcategory, tusers, tviews WHERE tcategory.id = tviews.category and tusers.id = tviews.uid AND tusers.id LIKE '$_GET[userid]'";
+									}
+									$query= mysql_query($requete);
 									while ($row=mysql_fetch_array($query)) 
 									{
 										if ($_POST['category']==$row['id']) echo "<option selected value=\"$row[id]\">$row[name]</option>"; else echo "<option value=\"$row[id]\">$row[name]</option>";
@@ -564,28 +592,30 @@ if($_POST['selectrow'])
 									<option value="%"></option>
 									<?php
 									if($_POST['category']!='%')
-									{$query = mysql_query("SELECT * FROM tsubcat WHERE cat LIKE $_POST[category] ORDER BY name");}
-									else
-									{$query = mysql_query("SELECT * FROM tsubcat ORDER BY name");}
-									while ($row=mysql_fetch_array($query))
-									{
-										if ($_POST['subcat']==$row['id']) echo "<option selected value=\"$row[id]\">$row[name]</option>"; else echo "<option value=\"$row[id]\">$row[name]</option>";
-									} 
+									{$query = mysql_query("SELECT * FROM tsubcat WHERE cat LIKE $_POST[category] ORDER BY name");
+										while ($row=mysql_fetch_array($query))
+										{
+											if ($_POST['subcat']==$row['id']) echo "<option selected value=\"$row[id]\">$row[name]</option>"; else echo "<option value=\"$row[id]\">$row[name]</option>";
+										} 
+									}
 									?>
 								</select>
+								
 							</td>
 							<td>
-								<input name="title" size="24" onchange="submit();" type="text"  value="<?php if ($_POST['title']!='%')echo $_POST['title']; ?>" />
+								<input name="title" style="width:250px" onchange="submit();" type="text"  value="<?php if ($_POST['title']!='%')echo $_POST['title']; ?>" />
 							</td>
 							<td>
-								<input name="date" size="4" onchange="submit();" type="text"  value="<?php if ($_POST['date']!='%')echo $_POST['date']; ?>" />
+								<input name="date" size="10" onchange="submit();" type="text"  value="<?php if ($_POST['date']!='%')echo $_POST['date']; ?>" />
 							</td>
 							<td align="center">
 								<select style="width:50px" id="fstate" name="fstate" onchange="submit()" >	
 									<option value=""></option>
 									<?php
 									$query = mysql_query("SELECT * FROM tstates ORDER BY name");
-									while ($row=mysql_fetch_array($query))  {echo "<option value=\"$row[id]\">$row[name]</option>";} 
+									while ($row=mysql_fetch_array($query))  {
+										if ($_POST['fstate']==$row['id'])echo "<option value=\"$row[id]\" selected>$row[name]</option>"; else echo "<option value=\"$row[id]\">$row[name]</option>";
+									} 
 									?>
 								</select>
 							</td>
@@ -594,7 +624,9 @@ if($_POST['selectrow'])
 									<option value=""></option>
 									<?php
 									$query = mysql_query("SELECT * FROM tpriority ORDER BY number");
-									while ($row=mysql_fetch_array($query)){echo "<option value=\"$row[number]\">$row[name]</option>";} 
+									while ($row=mysql_fetch_array($query)){
+										if ($_POST['priority']==$row['number'])echo "<option value=\"$row[number]\" selected>$row[name]</option>"; else echo "<option value=\"$row[number]\">$row[name]</option>";
+									} 
 									?>
 								</select>
 							</td>
@@ -605,7 +637,7 @@ if($_POST['selectrow'])
 									$query = mysql_query("SELECT * FROM tcriticality ORDER BY number");
 									while ($row=mysql_fetch_array($query))
 									{
-									echo "<option value=\"$row[id]\">$row[name]</option>";
+									if ($_POST['criticality']==$row['id'])echo "<option value=\"$row[id]\" selected>$row[name]</option>"; else echo "<option value=\"$row[id]\">$row[name]</option>";
 									} 
 									?>
 								</select>
@@ -616,7 +648,7 @@ if($_POST['selectrow'])
 					</form>
 				</thead>
 				<tbody>
-				<form name="actionlist" method="POST">
+				<form name="actionlist" method="POST" >
 					<?php
 						while ($row=mysql_fetch_array($masterquery))
 						{ 
@@ -649,12 +681,12 @@ if($_POST['selectrow'])
 							$resultscat=mysql_fetch_array($queryscat);
 							
 							//cut first letter of firstame
-							$Fname=substr($resultuser['firstname'], 0, 1);
-							$Ftname=substr($resulttech['firstname'], 0, 1);
+							$Fname=$resultuser['firstname'];
+							$Ftname=$resulttech['firstname'];
 							
 							//display username or groupname
-							if ($resultusergroup[0]!=0) {$displayusername="[G] $resultusergroup[name]";} else {$displayusername="$Fname. $resultuser[lastname]" ;}	
-							if ($resulttechgroup[0]!=0) {$displaytechname="[G] $resulttechgroup[name]";} else {$displaytechname="$Ftname. $resulttech[lastname]" ;}	
+							if ($resultusergroup[0]!=0) {$displayusername="[G] $resultusergroup[name]";} else {$displayusername="$Fname $resultuser[lastname]" ;}	
+							if ($resulttechgroup[0]!=0) {$displaytechname="[G] $resulttechgroup[name]";} else {$displaytechname="$Ftname $resulttech[lastname]" ;}	
 								
 							$rowdate= date_cnv($row['date_create']);
 							
@@ -752,7 +784,7 @@ if($_POST['selectrow'])
 	{
 		echo '
 			&nbsp;&nbsp;&nbsp;	<i class="icon-level-down icon-rotate-180 icon-2x"></i>&nbsp&nbsp&nbsp
-			<select title="Effectue des actions pour les tickets selectionnés dans la liste des tâches." name="selectrow" onchange="submit()">
+			<select title="Effectue des actions pour les tickets selectionnés dans la liste des tâches." name="selectrow" onchange="confirmation();">
 				<option selected>Pour la selection:</option>';
 			if ($rright['ticket_delete']!=0){
 				echo '<option value="delete">Supprimer</option>';
