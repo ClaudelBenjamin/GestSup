@@ -102,10 +102,9 @@ if($_GET['action']!='new') //case for edit ticket not new ticket
 															<div class="widget-body">
 																<div class="widget-main">';
 																//detect <br> for wysiwyg transition from 2.9 to 3.0
-												                //$findbr=stripos($row['text'], '<br>');
-										                        //if ($findbr === false) {$threadtext=nl2br($row['text']);} else {$threadtext=$row['text'];}
-											                	$threadtext=$row['text'];
-																echo '
+												                $findbr=stripos($row['text'], '<br>');
+										                        if ($findbr === false) {$threadtext=nl2br($row['text']);} else {$threadtext=$row['text'];}
+											                	echo '
 																	'.$threadtext.'
 																</div>
 															</div>
@@ -207,9 +206,8 @@ if($_GET['action']!='new') //case for edit ticket not new ticket
 					if($_GET['threadedit']) $button="Modifier"; else $button="Ajouter";
 					
 					//detect <br> for wysiwyg transition from 2.9 to 3.0
-					//$findbr=stripos($row[0], '<br>');
-					//if ($findbr === false) {$text=nl2br($row[0]);} else {$text=$row[0];}
-					$text=$row[0];
+					$findbr=stripos($row[0], '<br>');
+					if ($findbr === false) {$text=nl2br($row[0]);} else {$text=$row[0];}
 					echo '
 					<table border="0"  width="700" >
 						<tr>
@@ -218,7 +216,7 @@ if($_GET['action']!='new') //case for edit ticket not new ticket
 									<tr>
 										<td>
 											<div id="editor2" class="wysiwyg-editor" >';
-										    	if($_POST['text2']) echo $_POST['text2']; elseif($text) echo $text; else echo "";
+										    	if($_POST['text2']) echo $_POST['text2']; elseif($text) echo $text; else echo "<br /><br /><br />";
 											echo '</div>
 											<input type="hidden" name="text2" />
 										</td>
