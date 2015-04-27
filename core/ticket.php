@@ -93,7 +93,7 @@ if(substr($_POST['technician'], 0, 1) =='G')
 {
 	$t_group=$globalrow['t_group'];
 	$_POST['technician']='';
-} 
+}
 //send mail to admin if it's enable in parameters
 if($_POST['send']) 
 {
@@ -134,16 +134,17 @@ if($_POST['modify']||$_POST['quit']||$_POST['mail']||$_POST['upload']||$save=="1
 	$_POST['description'] = mysql_real_escape_string($_POST['text']);
 	$_POST['resolution'] = mysql_real_escape_string($_POST['text2']);
 	$_POST['title'] = mysql_real_escape_string($_POST['title']);
+	$_POST['ref'] = mysql_real_escape_string($_POST['ref']);
 	
 	//remove <br><br><br> generate to space display 
 	$_POST['description']=str_replace("<br><br><br>","","$_POST[description]");
 	$_POST['resolution']=str_replace("<br><br><br>","","$_POST[resolution]");
 	
 	//remove xml tag if detect (resolv problem to past from word to firefox)
-	$detect1 = stripos($_POST['description'], '<!--[if gte mso 9]>');
+	/* $detect1 = stripos($_POST['description'], '<!--[if gte mso 9]>');
 	if ($detect1 !== false) {$_POST['description']=strip_tags($_POST['description']);}
 	$detect2 = stripos($_POST['resolution'], '<!--[if gte mso 9]>');
-	if ($detect2 !== false) {$_POST['resolution']=strip_tags($_POST['resolution']);}
+	if ($detect2 !== false) {$_POST['resolution']=strip_tags($_POST['resolution']);} */
 	
 	//merge hour and date from availability part
 	if ($_POST['start_availability_d'])
@@ -220,15 +221,82 @@ if($_POST['modify']||$_POST['quit']||$_POST['mail']||$_POST['upload']||$save=="1
 		if($_POST['technician']==$_SESSION['user_id']) $techread=1; //read ticket  
 		
 		//insert ticket
-		$query= "INSERT INTO tincidents (user,type,u_group,u_service,technician,t_group,title,description,date_create,date_hope,date_res,priority,criticality,state,creator,time,time_hope,category,subcat,techread,place,start_availability,end_availability,availability_planned) VALUES ('$_POST[user]','$_POST[type]','$u_group','$u_service','$_POST[technician]','$t_group','$_POST[title]','$_POST[description]','$_POST[date_create]','$_POST[date_hope]','$_POST[date_res]','$_POST[priority]','$_POST[criticality]','$_POST[state]','$_SESSION[user_id]','$_POST[time]','$_POST[time_hope]','$_POST[category]','$_POST[subcat]','$techread','$_POST[ticket_places]','$start_availability','$end_availability','$_POST[availability_planned]')";
+		// TIME : Verification que le temps total des 3 listes (en minute) existe dans la table ttime				
+		$_POST['time'] = intval($_POST['time_day']) + intval($_POST['time_hour']) + intval($_POST['time_min']);
+		$globalrow['time'] = $_POST['time']; //intval($globalrow['time_day']) + intval($globalrow['time_hour']) + intval($globalrow['time_min']);
+		$timeD = intval($_POST['time_day'])/60/7;
+		$timeH = intval($_POST['time_hour'])/60;
+		$timeM = intval($_POST['time_min']);
+		$nameTime = $timeD."j".$timeH."h".$timeM."min";
+		$query = mysql_query("SELECT * FROM ttime WHERE name LIKE '$nameTime'");
+		// Si le resultat n'existe pas dans la base on l'ajoute
+		if(mysql_num_rows($query)==0){
+			$insert = "INSERT INTO ttime (min,name)VALUES(".$_POST['time'].",'".$nameTime."')";
+			echo $insert;
+			$query = mysql_query($insert);
+		}
+		
+		// TIME_HOPE : Verification que le temps total des 3 listes (en minute) existe dans la table ttime
+		$_POST['time_hope'] = intval($_POST['time_hope_day']) + intval($_POST['time_hope_hour']) + intval($_POST['time_hope_min']);
+		$globalrow['time_hope'] = $_POST['time_hope']; //intval($globalrow['time_hope_day']) + intval($globalrow['time_hope_hour']) + intval($globalrow['time_hope_min']);
+		$timeHD = intval($_POST['time_hope_day'])/60/7;
+		$timeHH = intval($_POST['time_hope_hour'])/60;
+		$timeHM = intval($_POST['time_hope_min']);
+		$nameTimeHope = $timeHD."j".$timeHH."h".$timeHM."min";
+		$query = mysql_query("SELECT * FROM ttime WHERE name LIKE '$nameTimeHope'");
+		// Si le resultat n'existe pas dans la base on l'ajoute
+		if(mysql_num_rows($query)==0){
+			$insert = "INSERT INTO ttime (min,name)VALUES(".$_POST['time_hope'].",'".$nameTimeHope."')";
+			$query = mysql_query($insert);
+		}
+		
+		//Vérification cohérence entre état du ticket et date de résolution
+		if (($_POST['state']!=3)&&($_POST['date_res']!="0000-00-00 00:00")) $_POST['date_res']="0000-00-00 00:00";
+		
+		$query= "INSERT INTO tincidents (ref,user,type,u_group,u_service,technician,t_group,title,description,date_create,date_hope,date_res,priority,criticality,state,creator,time,time_hope,category,subcat,techread,place,start_availability,end_availability,availability_planned) VALUES ('$_POST[ref]','$_POST[user]','$_POST[type]','$u_group','$u_service','$_POST[technician]','$t_group','$_POST[title]','$_POST[description]','$_POST[date_create]','$_POST[date_hope]','$_POST[date_res]','$_POST[priority]','$_POST[criticality]','$_POST[state]','$_SESSION[user_id]','$_POST[time]','$_POST[time_hope]','$_POST[category]','$_POST[subcat]','$techread','$_POST[ticket_places]','$start_availability','$end_availability','$_POST[availability_planned]')";
 		$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
 	    if ($rparameters['debug']==1) {echo $query;}
 	} else {
+		// TIME : Verification que le temps total des 3 listes (en minute) existe dans la table ttime				
+		$_POST['time'] = intval($_POST['time_day']) + intval($_POST['time_hour']) + intval($_POST['time_min']);
+		$globalrow['time'] = $_POST['time']; //intval($globalrow['time_day']) + intval($globalrow['time_hour']) + intval($globalrow['time_min']);
+		$timeD = intval($_POST['time_day'])/60/7;
+		$timeH = intval($_POST['time_hour'])/60;
+		$timeM = intval($_POST['time_min']);
+		$nameTime = $timeD."j".$timeH."h".$timeM."min";
+		$query = mysql_query("SELECT * FROM ttime WHERE name LIKE '$nameTime'");
+		// Si le resultat n'existe pas dans la base on l'ajoute
+		if(mysql_num_rows($query)==0){
+			$insert = "INSERT INTO ttime (min,name)VALUES(".$_POST['time'].",'".$nameTime."')";
+			echo $insert;
+			$query = mysql_query($insert);
+		}
 		//modify read state
+		// TIME_HOPE : Verification que le temps total des 3 listes (en minute) existe dans la table ttime
+		$_POST['time_hope'] = intval($_POST['time_hope_day']) + intval($_POST['time_hope_hour']) + intval($_POST['time_hope_min']);
+		$globalrow['time_hope'] = $_POST['time_hope']; //intval($globalrow['time_hope_day']) + intval($globalrow['time_hope_hour']) + intval($globalrow['time_hope_min']);
+		$timeHD = intval($_POST['time_hope_day'])/60/7;
+		$timeHH = intval($_POST['time_hope_hour'])/60;
+		$timeHM = intval($_POST['time_hope_min']);
+		$nameTimeHope = $timeHD."j".$timeHH."h".$timeHM."min";
+		$query = mysql_query("SELECT * FROM ttime WHERE name LIKE '$nameTimeHope'");
+		// Si le resultat n'existe pas dans la base on l'ajoute
+		if(mysql_num_rows($query)==0){
+			$insert = "INSERT INTO ttime (min,name)VALUES(".$_POST['time_hope'].",'".$nameTimeHope."')";
+			$query = mysql_query($insert);
+		}
+		
+		//Ajout de la date de résolution si l'état passe a résolu
+		if(($_POST['state']==3) && ($_POST['date_res'] == "0000-00-00 00:00:00")){
+			$_POST['date_res'] = date("Y-m-d H:i:s");
+		}
+		
+		
 		if($_POST['technician']==$_SESSION['user_id']) $techread=1; //read ticket  
 		if($globalrow['technician']=='') $techread=1; //read ticket case when it's an unassigned ticket.
 		//update ticket
 		$query = "UPDATE tincidents SET 
+		ref='$_POST[ref]',
 		user='$_POST[user]',
 		type='$_POST[type]',
 		u_group='$u_group',
@@ -278,8 +346,12 @@ if($_POST['modify']||$_POST['quit']||$_POST['mail']||$_POST['upload']||$save=="1
 	//threads insert close state
 	if($_POST['state']=='3' && $globalrow['state']!='3')
 	{
-		$query = "INSERT INTO tthreads (ticket,date,author,type) VALUES ('$_GET[id]','$datetime', '$_SESSION[user_id]', 4)";
-		$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
+		$query = "SELECT * FROM tthreads WHERE `ticket`=$_GET[id] AND `author`=$_SESSION[user_id] AND `type`=4";
+		$res = mysql_num_rows($query);
+		if ($res == 0){
+			$query = "INSERT INTO tthreads (ticket,date,author,type) VALUES ('$_GET[id]','$datetime', '$_SESSION[user_id]', 4)";
+			$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
+		}
 	}
 	//uploading files
 	include "./core/upload.php";
@@ -330,14 +402,64 @@ if($_POST['modify']||$_POST['quit']||$_POST['mail']||$_POST['upload']||$save=="1
 			
 }
 if($_POST['close']) 
-{
-	//update tincidents
-	$query = "UPDATE tincidents SET state='3', techread='0' WHERE id='$_GET[id]'";
-	$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
-	//update thread
-	$query = "INSERT INTO tthreads (ticket, date, type, author) VALUES ('$_GET[id]','$datetime','4','$_SESSION[user_id]')";
-	$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
+{	//Mise à jour du ticket
+		//update tincidents
+	$res = mysql_query("SELECT * FROM tincidents WHERE `id`=$_GET[id] AND `state`=3");
+	$nbrow = mysql_num_rows($res);
+	echo $nbrow;
+	echo '</br>';
+	if ($nbrow == 0){
+		$query = "UPDATE tincidents SET state=3, date_res='$datetime', techread='0' WHERE id='$_GET[id]'";
+		$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
+		echo $query;
+		echo '</br>';
+	}
+		//update thread
+	$res = mysql_query("SELECT * FROM tthreads WHERE `ticket`=$_GET[id] AND `author`=$_SESSION[user_id] AND `type`=4");
+	$nbrow = mysql_num_rows($res);
+	echo $nbrow;
+	echo '</br>';
+	if ($nbrow == 0){
+		$query = "INSERT INTO tthreads (ticket, date, type, author) VALUES ('$_GET[id]','$datetime','4','$_SESSION[user_id]')";
+		$exec = mysql_query($query) or die('Erreur SQL !<br /><br />'.mysql_error());
+	}
+	if ($rparameters['mail_newticket']==1)
+	{
+		//find username
+		$userquery = mysql_query("SELECT * FROM tusers WHERE id='$uid'");
+		$userrow=mysql_fetch_array($userquery);	
+	
+		////mail parameters
+		if($rparameters['mail_from_adr']=='')
+		{
+			if ($userrow['mail']!='') $from=$userrow['mail']; else $from=$rparameters['mail_cc'];
+		} else {
+			$from=$rparameters['mail_from_adr'];
+		}
+	
+		$to=$rparameters['mail_newticket_address'];
+		$object="L'incident n°$_GET[id] a été cloturé par $userrow[lastname] $userrow[firstname]: $_POST[title]";
+		$message = "
+		L'incident n°$_GET[id] à été déclaré par l'utilisateur $userrow[lastname] $userrow[firstname].<br />
+		<br />
+		<u>Objet:</u><br />
+		$_POST[title]<br />		
+		<br />	
+		<u>Description:</u><br />
+		$_POST[text]<br />
+		<br />
+		Pour plus d'informations vous pouvez consulter le ticket sur <a href=\"$rparameters[server_url]/index.php?page=ticket&id=$_GET[id]\">$rparameters[server_url]/index.php?page=ticket&id=$_GET[id]</a>. ";
+		require('./core/message.php');
+	}
+    //redirect
+		$www = "./index.php?page=dashboard&userid=$_GET[userid]&state=$_GET[state]&category=$_GET[category]&subcat=$_GET[subcat]&viewid=$_GET[viewid]";
+		echo '<script language="Javascript">
+		<!--
+		document.location.replace("'.$www.'");
+		-->
+		</script>';
 }
+
 if($_POST['cancel']) 
 {
 echo '<div class="alert alert-block alert-danger"><center><i class="icon-remove red"></i>	Annulation pas de modification.</center></div>';
