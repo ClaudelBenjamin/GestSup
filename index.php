@@ -9,6 +9,8 @@
 # @Update : 27/10/2014
 # @Version : 3.0.10
 ################################################################################
+ini_set('session.gc_maxlifetime', 25200);
+session_set_cookie_params(25200);
 session_start();
 
 if ($_GET['page']!='ticket' && $_GET['page'])
@@ -97,7 +99,6 @@ if ($_SESSION['user_id'])
 	$qprofile = mysql_query("SELECT profile FROM `tusers` WHERE id LIKE '$uid'"); 
 	$_SESSION['profile_id'] = mysql_fetch_array($qprofile);
 	$_SESSION['profile_id'] = $_SESSION['profile_id'][0];
-
 	//load rights table
 	$qright = mysql_query("SELECT * FROM `trights` WHERE profile=$_SESSION[profile_id]"); 
 	$rright= mysql_fetch_array($qright);
